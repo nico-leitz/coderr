@@ -36,3 +36,16 @@ class RegistrationSerializer(serializers.ModelSerializer):
         UserProfile.objects.create(user=user, type=type_data)
 
         return user
+
+
+class LoginSerializer(serializers.Serializer):
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, data):
+        user = authenticate(username=data.get('username'), password=data.get('password'))
+            
+        if user:
+            data['user'] = user
+            return data
+                
+        raise serializers.ValidationError({"detail": "Invalid username or password."})
