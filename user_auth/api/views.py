@@ -5,7 +5,7 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from user_auth.models import UserProfile
 from .permissions import IsProfileOwnerOrReadOnly
-from .serializers import RegistrationSerializer, LoginSerializer, UserProfileSerializer
+from .serializers import RegistrationSerializer, LoginSerializer, UserProfileSerializer, BusinessProfileListSerializer
 
 class RegistrationView(generics.CreateAPIView):
     serializer_class = RegistrationSerializer
