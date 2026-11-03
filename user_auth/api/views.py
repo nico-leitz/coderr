@@ -1,9 +1,11 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
-from .serializers import RegistrationSerializer, LoginSerializer
+from user_auth.models import UserProfile
+from .permissions import IsProfileOwnerOrReadOnly
+from .serializers import RegistrationSerializer, LoginSerializer, UserProfileSerializer
 
 class RegistrationView(generics.CreateAPIView):
     serializer_class = RegistrationSerializer
@@ -45,3 +47,12 @@ class LoginView(ObtainAuthToken):
             return Response(data, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ProfileDetailView(generics.RetrieveUpdateAPIView):
+    queryset = UserProfile.objects.select_related('user').all()
+    serializer_class = UserProfileSerializer
+    permission_classes = [IsAuthenticated, IsProfileOwnerOrReadOnly]
+    lookup_field = 'user__id'
+    lookup_url_kwarg = 'pk'
+    http_method_names = ['get', 'patch', 'head', 'options']
