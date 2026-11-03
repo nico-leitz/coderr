@@ -79,3 +79,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
             if field in data and data[field] is None:
                 data[field] = ''
         return data
+
+class BusinessProfileListSerializer(UserProfileSerializer):
+    class Meta(UserProfileSerializer.Meta):
+        fields = [
+            'user', 'username', 'first_name', 'last_name', 'file',
+            'location', 'tel', 'description', 'working_hours', 'type'
+        ]
