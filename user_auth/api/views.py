@@ -5,7 +5,14 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from user_auth.models import UserProfile
 from .permissions import IsProfileOwnerOrReadOnly
-from .serializers import RegistrationSerializer, LoginSerializer, UserProfileSerializer, BusinessProfileListSerializer
+from .serializers import (
+    RegistrationSerializer,
+    LoginSerializer,
+    UserProfileSerializer,
+    BusinessProfileListSerializer,
+    CustomerProfileListSerializer
+)
+
 
 class RegistrationView(generics.CreateAPIView):
     serializer_class = RegistrationSerializer
@@ -68,5 +75,12 @@ class BusinessProfileListView(generics.ListAPIView):
 class BusinessProfileListView(generics.ListAPIView):
     queryset = UserProfile.objects.select_related('user').filter(type='business')
     serializer_class = BusinessProfileListSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
+
+
+class CustomerProfileListView(generics.ListAPIView):
+    queryset = UserProfile.objects.select_related('user').filter(type='customer')
+    serializer_class = CustomerProfileListSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = None
