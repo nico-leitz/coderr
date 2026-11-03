@@ -56,3 +56,17 @@ class ProfileDetailView(generics.RetrieveUpdateAPIView):
     lookup_field = 'user__id'
     lookup_url_kwarg = 'pk'
     http_method_names = ['get', 'patch', 'head', 'options']
+
+
+class BusinessProfileListView(generics.ListAPIView):
+    queryset = UserProfile.objects.select_related('user').filter(type='business')
+    serializer_class = BusinessProfileListSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
+
+
+class BusinessProfileListView(generics.ListAPIView):
+    queryset = UserProfile.objects.select_related('user').filter(type='business')
+    serializer_class = BusinessProfileListSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
