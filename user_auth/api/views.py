@@ -72,13 +72,6 @@ class BusinessProfileListView(generics.ListAPIView):
     pagination_class = None
 
 
-class BusinessProfileListView(generics.ListAPIView):
-    queryset = UserProfile.objects.select_related('user').filter(type='business')
-    serializer_class = BusinessProfileListSerializer
-    permission_classes = [IsAuthenticated]
-    pagination_class = None
-
-
 class CustomerProfileListView(generics.ListAPIView):
     queryset = UserProfile.objects.select_related('user').filter(type='customer')
     serializer_class = CustomerProfileListSerializer
