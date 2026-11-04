@@ -56,3 +56,9 @@ class OfferRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
         if self.request.method == 'PATCH':
             return OfferCreateUpdateSerializer
         return OfferRetrieveSerializer
+
+
+class OfferDetailRetrieveView(generics.RetrieveAPIView):
+    queryset = OfferDetail.objects.all()
+    serializer_class = OfferDetailSerializer
+    permission_classes = [IsAuthenticated]
