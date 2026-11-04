@@ -40,3 +40,19 @@ class OfferListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+
+class OfferRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated, IsOfferOwnerOrReadOnly]
+    http_method_names = ['get', 'patch', 'delete', 'head', 'options']
+
+    def get_queryset(self):
+        return Offer.objects.select_related('user').prefetch_related('details').annotate(
+            min_price=Min('details__price'),
+            min_delivery_time=Min('details__delivery_time_in_days')
+        )
+
+    def get_serializer_class(self):
+        if self.request.method == 'PATCH':
+            return OfferCreateUpdateSerializer
+        return OfferRetrieveSerializer
