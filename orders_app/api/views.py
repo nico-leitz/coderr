@@ -37,3 +37,21 @@ class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = OrderStatusUpdateSerializer
     permission_classes = [IsAuthenticated, IsOrderBusinessPartnerOrAdmin]
     http_method_names = ['patch', 'delete', 'head', 'options']
+
+
+class OrderCountView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, business_user_id):
+        get_object_or_404(UserProfile, user_id=business_user_id, type='business')
+        count = Order.objects.filter(business_user_id=business_user_id, status='in_progress').count()
+        return Response({'order_count': count}, status=status.HTTP_200_OK)
+
+
+class CompletedOrderCountView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, business_user_id):
+        get_object_or_404(UserProfile, user_id=business_user_id, type='business')
+        count = Order.objects.filter(business_user_id=business_user_id, status='completed').count()
+        return Response({'completed_order_count': count}, status=status.HTTP_200_OK)
