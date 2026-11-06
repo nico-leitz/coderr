@@ -46,3 +46,21 @@ class OrderCreateSerializer(serializers.Serializer):
 
     def to_representation(self, instance):
         return OrderSerializer(instance, context=self.context).data
+    
+
+class OrderStatusUpdateSerializer(serializers.ModelSerializer):
+    status = serializers.ChoiceField(choices=Order.STATUS_CHOICES, required=True)
+
+    class Meta:
+        model = Order
+        fields = ['status']
+
+    def validate(self, data):
+        allowed_keys = {'status'}
+        received_keys = set(self.initial_data.keys())
+        if not received_keys or not received_keys.issubset(allowed_keys):
+            raise serializers.ValidationError("Only the 'status' field is allowed to be updated.")
+        return data
+
+    def to_representation(self, instance):
+        return OrderSerializer(instance, context=self.context).data
