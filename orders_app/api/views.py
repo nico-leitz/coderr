@@ -30,3 +30,10 @@ class OrderListCreateView(generics.ListCreateAPIView):
         if self.request.method == 'POST':
             return OrderCreateSerializer
         return OrderSerializer
+    
+
+class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Order.objects.all()
+    serializer_class = OrderStatusUpdateSerializer
+    permission_classes = [IsAuthenticated, IsOrderBusinessPartnerOrAdmin]
+    http_method_names = ['patch', 'delete', 'head', 'options']
