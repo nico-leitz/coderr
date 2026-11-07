@@ -23,3 +23,10 @@ class ReviewListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(reviewer=self.request.user)
+
+
+class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewUpdateSerializer
+    permission_classes = [IsAuthenticated, IsReviewOwnerOrReadOnly]
+    http_method_names = ['patch', 'delete', 'head', 'options']
