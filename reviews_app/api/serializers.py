@@ -26,3 +26,22 @@ class ReviewSerializer(serializers.ModelSerializer):
             if Review.objects.filter(business_user=business_user, reviewer=request.user).exists():
                 raise serializers.ValidationError("You have already submitted a review for this business user.")
         return data
+
+
+class ReviewUpdateSerializer(serializers.ModelSerializer):
+    rating = serializers.IntegerField(min_value=1, max_value=5, required=False)
+
+    class Meta:
+        model = Review
+        fields = [
+            'id', 'business_user', 'reviewer', 'rating',
+            'description', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'business_user', 'reviewer', 'created_at', 'updated_at']
+
+    def validate(self, data):
+        allowed_keys = {'rating', 'description'}
+        received_keys = set(self.initial_data.keys())
+        if not received_keys or not received_keys.issubset(allowed_keys):
+            raise serializers.ValidationError("Only 'rating' and 'description' fields are editable.")
+        return data
