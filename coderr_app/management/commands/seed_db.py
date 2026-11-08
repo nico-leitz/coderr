@@ -1,111 +1,87 @@
-from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
-from user_auth.models import UserProfile
+from django.core.management.base import BaseCommand
+
 from offers_app.models import Offer, OfferDetail
 from orders_app.models import Order
 from reviews_app.models import Review
+from user_auth.models import UserProfile
+
 
 class Command(BaseCommand):
+    """Management command to seed the database with initial test data."""
     help = 'Seeds the database with test data for Coderr.'
 
     def handle(self, *args, **kwargs):
-        self.stdout.write('Deleting old test data...')
+        """Execute database seeding workflow."""
+        self._clear_old_data()
+        business_user = self._create_business_user()
+        customer_user = self._create_customer_user()
+        offer = self._create_offer(business_user)
+        standard_detail = self._create_offer_details(offer)
+        self._create_order_and_review(customer_user, business_user, standard_detail)
+        self.stdout.write(self.style.SUCCESS('Successfully seeded database!'))
+
+    def _clear_old_data(self):
+        """Remove existing test records to avoid duplicates."""
         Review.objects.all().delete()
         Order.objects.all().delete()
         OfferDetail.objects.all().delete()
         Offer.objects.all().delete()
         User.objects.filter(username__in=['max_business', 'customer_jane']).delete()
 
-        self.stdout.write('Creating users and profiles...')
-        
-        business_user = User.objects.create_user(
-            username='max_business',
-            email='max@business.de',
-            password='test1234!',
-            first_name='Max',
-            last_name='Mustermann'
+    def _create_business_user(self):
+        """Create and return a test business user with profile."""
+        user = User.objects.create_user(
+            username='max_business', email='max@business.de',
+            password='test1234!', first_name='Max', last_name='Mustermann'
         )
         UserProfile.objects.create(
-            user=business_user,
-            type='business',
-            location='Berlin',
-            tel='123456789',
-            description='Professional web design and branding services.',
-            working_hours='9-17'
+            user=user, type='business', location='Berlin', tel='123456789',
+            description='Professional web design services.', working_hours='9-17'
         )
+        return user
 
-        customer_user = User.objects.create_user(
-            username='customer_jane',
-            email='jane@customer.de',
-            password='test1234!',
-            first_name='Jane',
-            last_name='Doe'
+    def _create_customer_user(self):
+        """Create and return a test customer user with profile."""
+        user = User.objects.create_user(
+            username='customer_jane', email='jane@customer.de',
+            password='test1234!', first_name='Jane', last_name='Doe'
         )
-        UserProfile.objects.create(
-            user=customer_user,
-            type='customer',
-            location='Munich'
-        )
+        UserProfile.objects.create(user=user, type='customer', location='Munich')
+        return user
 
-        self.stdout.write('Creating offers...')
-        offer = Offer.objects.create(
+    def _create_offer(self, business_user):
+        """Create and return a sample offer for the business user."""
+        return Offer.objects.create(
             user=business_user,
             title='Website Design & Development',
-            description='I will build a modern, responsive website for your business.',
+            description='I will build a modern, responsive website for your business.'
         )
 
+    def _create_offer_details(self, offer):
+        """Create basic, standard, and premium details and return standard detail."""
         OfferDetail.objects.create(
-            offer=offer,
-            title='Basic Landing Page',
-            revisions=2,
-            delivery_time_in_days=5,
-            price=150.00,
-            features=['1 Page', 'Responsive Design'],
-            offer_type='basic'
+            offer=offer, title='Basic Landing Page', revisions=2,
+            delivery_time_in_days=5, price=150.00, features=['1 Page'], offer_type='basic'
         )
-
-        standard_detail = OfferDetail.objects.create(
-            offer=offer,
-            title='Standard Corporate Site',
-            revisions=5,
-            delivery_time_in_days=14,
-            price=450.00,
-            features=['Up to 5 Pages', 'Responsive Design', 'Contact Form'],
-            offer_type='standard'
+        standard = OfferDetail.objects.create(
+            offer=offer, title='Standard Corporate Site', revisions=5,
+            delivery_time_in_days=14, price=450.00, features=['5 Pages', 'SEO'], offer_type='standard'
         )
-
         OfferDetail.objects.create(
-            offer=offer,
-            title='Premium E-Commerce',
-            revisions=10,
-            delivery_time_in_days=30,
-            price=1200.00,
-            features=['Full E-Commerce', 'Payment Gateway', 'Admin Panel', 'SEO Setup'],
-            offer_type='premium'
+            offer=offer, title='Premium E-Commerce', revisions=10,
+            delivery_time_in_days=30, price=1200.00, features=['Full Shop'], offer_type='premium'
         )
+        return standard
 
-        self.stdout.write('Creating orders...')
+    def _create_order_and_review(self, customer, business, detail):
+        """Create a sample order and review between customer and business user."""
         Order.objects.create(
-            customer_user=customer_user,
-            business_user=business_user,
-            title=standard_detail.title,
-            revisions=standard_detail.revisions,
-            delivery_time_in_days=standard_detail.delivery_time_in_days,
-            price=standard_detail.price,
-            features=standard_detail.features,
-            offer_type=standard_detail.offer_type,
-            status='in_progress'
+            customer_user=customer, business_user=business, title=detail.title,
+            revisions=detail.revisions, delivery_time_in_days=detail.delivery_time_in_days,
+            price=detail.price, features=detail.features, offer_type=detail.offer_type
         )
-
-        self.stdout.write('Creating reviews...')
         Review.objects.create(
-            business_user=business_user,
-            reviewer=customer_user,
-            rating=5,
+            business_user=business, reviewer=customer, rating=5,
             description='Incredible work! Fast and highly professional.'
         )
-
-        self.stdout.write(self.style.SUCCESS('Successfully seeded database!'))
-        self.stdout.write('You can now log in with:')
-        self.stdout.write('- max_business (Password: test1234!)')
-        self.stdout.write('- customer_jane (Password: test1234!)')
