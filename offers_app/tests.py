@@ -8,10 +8,10 @@ from user_auth.models import UserProfile
 
 
 class OffersAPITests(APITestCase):
-    """Test suite for offers and offerdetails CRUD, filtering, and permissions."""
+    """TDD test suite for offers and offerdetails endpoints."""
 
     def setUp(self):
-        """Create business and customer users and a sample offer with 3 details."""
+        """Arrange business and customer users and one offer with 3 details."""
         self.biz = User.objects.create_user(username='biz', password='pw')
         UserProfile.objects.create(user=self.biz, type='business')
         self.cust = User.objects.create_user(username='cust', password='pw')
@@ -20,7 +20,7 @@ class OffersAPITests(APITestCase):
         self._create_sample_details()
 
     def _create_sample_details(self):
-        """Helper to attach basic, standard, and premium details to self.offer."""
+        """Attach basic, standard, and premium OfferDetail objects to self.offer."""
         for o_type, price in [('basic', 100), ('standard', 200), ('premium', 300)]:
             OfferDetail.objects.create(
                 offer=self.offer, title=o_type, revisions=2,
@@ -28,7 +28,7 @@ class OffersAPITests(APITestCase):
             )
 
     def _valid_offer_payload(self):
-        """Return valid payload containing 3 details for creating a new offer."""
+        """Return a valid 3-detail payload for POST /api/offers/."""
         return {
             'title': 'New Offer', 'description': 'New Desc',
             'details': [
@@ -38,41 +38,81 @@ class OffersAPITests(APITestCase):
             ]
         }
 
-    def test_offer_list_and_filters(self):
-        """Ensure offer list is public, paginated, and supports filter parameters."""
+    def test_offer_list_allows_unauthenticated_get(self):
+        """Ensure GET /api/offers/ is publicly accessible and paginated."""
+        response = self.client.get(reverse('offer-list-create'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('results', response.data)
+
+    def test_offer_list_filters_by_query_params(self):
+        """Ensure creator_id, min_price, and max_delivery_time filters work."""
         url = f"{reverse('offer-list-create')}?creator_id={self.biz.id}&min_price=50&max_delivery_time=10"
-        res = self.client.get(url)
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data['count'], 1)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['count'], 1)
 
-    def test_offer_create_business_vs_customer(self):
-        """Ensure only business users can create offers (201) and customers get 403."""
-        self.client.force_authenticate(user=self.cust)
-        res_cust = self.client.post(reverse('offer-list-create'), self._valid_offer_payload(), format='json')
-        self.assertEqual(res_cust.status_code, status.HTTP_403_FORBIDDEN)
+    def test_offer_create_by_business_user_returns_201(self):
+        """Ensure a business user can create an offer with 3 details."""
         self.client.force_authenticate(user=self.biz)
-        res_biz = self.client.post(reverse('offer-list-create'), self._valid_offer_payload(), format='json')
-        self.assertEqual(res_biz.status_code, status.HTTP_201_CREATED)
+        response = self.client.post(reverse('offer-list-create'), self._valid_offer_payload(), format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_offer_create_invalid_details_count(self):
-        """Ensure creating an offer with fewer than 3 details returns 400 Bad Request."""
+    def test_offer_create_by_customer_returns_403(self):
+        """Ensure a customer user is forbidden from creating an offer."""
+        self.client.force_authenticate(user=self.cust)
+        response = self.client.post(reverse('offer-list-create'), self._valid_offer_payload(), format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_offer_create_unauthenticated_returns_401(self):
+        """Ensure unauthenticated POST to /api/offers/ returns 401."""
+        response = self.client.post(reverse('offer-list-create'), self._valid_offer_payload(), format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_offer_create_with_fewer_than_three_details_returns_400(self):
+        """Ensure creating an offer without 3 details fails with 400."""
         self.client.force_authenticate(user=self.biz)
         bad_payload = {'title': 'T', 'description': 'D', 'details': []}
-        res = self.client.post(reverse('offer-list-create'), bad_payload, format='json')
-        self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+        response = self.client.post(reverse('offer-list-create'), bad_payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_offer_retrieve_patch_and_delete(self):
-        """Ensure retrieving, partially updating details, and deleting an offer work properly."""
+    def test_offer_retrieve_authenticated_returns_200(self):
+        """Ensure an authenticated user can retrieve offer details by ID."""
+        self.client.force_authenticate(user=self.cust)
+        response = self.client.get(reverse('offer-detail', kwargs={'pk': self.offer.id}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_offer_patch_by_owner_updates_nested_detail(self):
+        """Ensure offer owner can partially update an offer and its package detail."""
         self.client.force_authenticate(user=self.biz)
         url = reverse('offer-detail', kwargs={'pk': self.offer.id})
-        self.assertEqual(self.client.get(url).status_code, status.HTTP_200_OK)
         patch_data = {'title': 'Updated', 'details': [{'offer_type': 'basic', 'price': 120}]}
-        self.assertEqual(self.client.patch(url, patch_data, format='json').status_code, status.HTTP_200_OK)
-        self.assertEqual(self.client.delete(url).status_code, status.HTTP_204_NO_CONTENT)
+        response = self.client.patch(url, patch_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    def test_offerdetail_retrieve(self):
-        """Ensure authenticated user can retrieve a specific OfferDetail by ID."""
+    def test_offer_patch_detail_without_offer_type_returns_400(self):
+        """Ensure updating a nested detail without specifying offer_type returns 400."""
+        self.client.force_authenticate(user=self.biz)
+        url = reverse('offer-detail', kwargs={'pk': self.offer.id})
+        response = self.client.patch(url, {'details': [{'price': 120}]}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_offer_patch_by_non_owner_returns_403(self):
+        """Ensure non-owners receive 403 Forbidden when trying to PATCH an offer."""
+        self.client.force_authenticate(user=self.cust)
+        url = reverse('offer-detail', kwargs={'pk': self.offer.id})
+        response = self.client.patch(url, {'title': 'Hack'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_offer_delete_by_owner_returns_204(self):
+        """Ensure offer owner can delete their offer and receives 204 No Content."""
+        self.client.force_authenticate(user=self.biz)
+        url = reverse('offer-detail', kwargs={'pk': self.offer.id})
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_offerdetail_retrieve_authenticated_returns_200(self):
+        """Ensure authenticated user can retrieve a single OfferDetail object."""
         self.client.force_authenticate(user=self.cust)
         detail = self.offer.details.first()
-        res = self.client.get(reverse('offerdetail-detail', kwargs={'pk': detail.id}))
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        response = self.client.get(reverse('offerdetail-detail', kwargs={'pk': detail.id}))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
