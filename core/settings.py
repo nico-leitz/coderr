@@ -35,7 +35,7 @@ DEBUG = os.getenv("DEBUG", "False") == "True"
 ALLOWED_HOSTS = ['api.nico-leiteritz.de', 'localhost', '127.0.0.1']
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://api.nico-leiteritz.de',
+    'https://api.coderr.nico-leiteritz.de',
 ]
 
 
