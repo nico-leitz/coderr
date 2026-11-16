@@ -28,5 +28,5 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /var/www/backend
+            cd /var/www/coderr
             docker compose up -d --build
