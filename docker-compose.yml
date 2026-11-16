@@ -1,0 +1,7 @@
+services:
+  backend_api:
+    build: .
+    container_name: django_api_1
+    restart: always
+    ports:
+      - "3001:8000"
