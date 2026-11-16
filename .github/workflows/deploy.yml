@@ -19,7 +19,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "."
-          target: "/var/www/backend"
+          target: "/var/www/coderr"
 
       - name: Execute Docker Compose on Server
         uses: appleboy/ssh-action@v1.0.3
