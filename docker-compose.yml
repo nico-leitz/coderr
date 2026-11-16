@@ -12,10 +12,13 @@ services:
 
   backend_api:
     build: .
-    container_name: django_api_1
+    container_name: django_api_coderr
     restart: always
     ports:
       - "3001:8000"
+    volumes:
+      - .:/usr/src/app
+      - /var/www/coderr/staticfiles:/usr/src/app/staticfiles
     env_file:
       - .env
     depends_on:
