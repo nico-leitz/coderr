@@ -15,7 +15,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.12'
 
       - name: Install dependencies
         run: |
@@ -23,8 +23,15 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run Django tests
+        env:
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
         run: |
           python manage.py test
+
+      - name: Clean cache files before upload
+        run: |
+          find . -type d -name "__pycache__" -exec rm -r {} +
+          find . -name "*.pyc" -delete
 
       - name: Copy files to server via SCP
         uses: appleboy/scp-action@v0.1.7
