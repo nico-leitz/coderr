@@ -6,9 +6,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=django_db
-      - POSTGRES_USER=django_user
-      - POSTGRES_PASSWORD=supergeheimes_passwort
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
 
   backend_api:
     build: .
@@ -16,6 +16,8 @@ services:
     restart: always
     ports:
       - "3001:8000"
+    env_file:
+      - .env
     depends_on:
       - db
 
